@@ -1,0 +1,63 @@
+# Cấu hình tổng thể cho Smart Scanner
+general:
+  name: "Smart Security Scanner"
+  version: "1.0.0"
+  debug: false
+
+# Scope Guard - Kiểm soát phạm vi quét
+scope:
+  allowlist: []          # VD: ["example.com", "*.staging.com", "192.168.1.0/24"]
+  denylist: []           # VD: ["blocked.com", "10.0.0.0/8"]
+  local_lab_mode: false  # Bật để cho phép quét localhost/LAN
+  dry_run: false         # Bật để xem request dự kiến mà không gửi
+
+# Safety Profile
+safety:
+  profile: "safe-active"  # passive, safe-active, authenticated, deep-lab, ci-fast
+  no_external_callbacks: true  # Chặn payload gọi callback ra ngoài
+  no_destructive: true         # Chặn payload destructive
+  require_confirmation: true   # Yêu cầu xác nhận trước active scan
+
+crawler:
+  max_depth: 3
+  max_pages: 100
+  concurrency: 5
+  delay: 0.3
+  headless: true
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+scanner:
+  sqli:
+    enabled: true
+    payload_level: "aggressive"  # basic, standard, aggressive
+    max_retries: 3
+  xss:
+    enabled: true
+    payload_level: "standard"
+    max_retries: 3
+  rce:
+    enabled: true
+    payload_level: "standard"
+    max_retries: 3
+  passive:
+    enabled: true
+
+network:
+  timeout: 15
+  retries: 3
+  rps: 5               # Giới hạn Requests Per Second
+  max_response_mb: 10  # Giới hạn kích thước response
+  verify_ssl: true     # Xác minh SSL (certifi); false để bỏ qua khi target cert lỗi
+  circuit_breaker:
+    failure_threshold: 10
+    reset_timeout: 30
+    max_consecutive_failures: 5
+  proxy: null
+  
+reporting:
+  output_dir: "./reports"
+  formats: ["json", "html"]
+
+storage:
+  enabled: false        # Bật lưu trữ SQLite
+  db_path: "./scanner.db"

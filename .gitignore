@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+smart_scanner/dist/
+smart_scanner/build/
+.pytest_cache/
+*.db
+.DS_Store
+.claude/settings.local.json
+smart_scanner/books_report.json
+*.correlated.json
+report.json
