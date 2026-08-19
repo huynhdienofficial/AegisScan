@@ -74,8 +74,16 @@ class JWTScanner:
         return f"{header_enc}.{payload_enc}.{sig}"
 
     # ─── Test 1: alg:none ─────────────────────────────────────
-    def test_alg_none(self, original_header, original_payload):
-        """Kiểm tra server chấp nhận token không chữ ký (alg:none)."""
+    async def test_alg_none(self, original_header, original_payload):
+        """Kiểm tra server chấp nhận token không chữ ký (alg:none).
+
+        LƯU Ý: `request_handler.send_request()` là async (aiohttp) — trước
+        đây hàm này (và test_exp_validation/test_kid_injection/scan) là
+        `def` đồng bộ và gọi send_request KHÔNG `await`, nên `resp` chỉ là
+        coroutine chưa chạy, `getattr(resp, 'status_code', 401)` luôn trả
+        về mặc định 401 → scanner luôn kết luận "an toàn", không bao giờ
+        phát hiện được lỗ hổng thật. Đã sửa: chuyển sang async/await.
+        """
         findings = []
         for alg in ['none', 'None', 'NONE']:
             header = dict(original_header)
@@ -86,7 +94,7 @@ class JWTScanner:
 
             if self.request_handler:
                 try:
-                    resp = self.request_handler.send_request('GET', self.jwt_header.get('url', ''), headers=headers)
+                    resp = await self.request_handler.send_request('GET', self.jwt_header.get('url', ''), headers=headers)
                     # Nếu server chấp nhận → không phải 401
                     if getattr(resp, 'status_code', 401) == 401:
                         continue
@@ -126,7 +134,7 @@ class JWTScanner:
         return []
 
     # ─── Test 3: Expiration Validation ────────────────────────
-    def test_exp_validation(self, original_header, original_payload):
+    async def test_exp_validation(self, original_header, original_payload):
         """Kiểm tra server có validate claim exp không."""
         payload = dict(original_payload)
         payload['exp'] = int(time.time()) - 3600  # hết hạn 1 giờ trước
@@ -134,7 +142,7 @@ class JWTScanner:
         token = self.build_token(original_header, payload, signature='expired')
         if self.request_handler:
             try:
-                resp = self.request_handler.send_request('GET', self.jwt_header.get('url', ''), headers=self._make_headers(token))
+                resp = await self.request_handler.send_request('GET', self.jwt_header.get('url', ''), headers=self._make_headers(token))
                 if getattr(resp, 'status_code', 401) == 401:
                     return []  # Server validate exp đúng
                 return [{
@@ -148,7 +156,7 @@ class JWTScanner:
         return []
 
     # ─── Test 4: Kid Injection ────────────────────────────────
-    def test_kid_injection(self, original_header, original_payload):
+    async def test_kid_injection(self, original_header, original_payload):
         """Kiểm tra lỗ hổng path traversal qua header kid."""
         findings = []
         kid_payloads = [
@@ -164,7 +172,7 @@ class JWTScanner:
             token = self.build_token(header, original_payload, secret='x')
             if self.request_handler:
                 try:
-                    resp = self.request_handler.send_request('GET', self.jwt_header.get('url', ''), headers=self._make_headers(token))
+                    resp = await self.request_handler.send_request('GET', self.jwt_header.get('url', ''), headers=self._make_headers(token))
                     if getattr(resp, 'status_code', 401) == 401:
                         continue
                     findings.append({
@@ -187,7 +195,7 @@ class JWTScanner:
                     headers[k] = v
         return headers
 
-    def scan(self):
+    async def scan(self):
         """Chạy toàn bộ JWT scan."""
         if not self.jwt_token:
             return {'vulnerabilities': [], 'note': 'Không có JWT token để test'}
@@ -200,7 +208,7 @@ class JWTScanner:
 
         # 1. alg:none
         if 'alg_none' in self.TESTS:
-            all_findings.extend(self.test_alg_none(header, payload))
+            all_findings.extend(await self.test_alg_none(header, payload))
 
         # 2. Weak secret
         if 'weak_secret' in self.TESTS and parts:
@@ -208,10 +216,10 @@ class JWTScanner:
 
         # 3. Exp validation
         if 'exp_validation' in self.TESTS:
-            all_findings.extend(self.test_exp_validation(header, payload))
+            all_findings.extend(await self.test_exp_validation(header, payload))
 
         # 4. Kid injection
         if 'kid_injection' in self.TESTS:
-            all_findings.extend(self.test_kid_injection(header, payload))
+            all_findings.extend(await self.test_kid_injection(header, payload))
 
         return {'vulnerabilities': all_findings}

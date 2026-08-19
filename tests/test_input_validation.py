@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from pathlib import Path
 
@@ -26,7 +27,7 @@ def test_ssrf_generates_canary_payloads():
 def test_ssrf_no_handler():
     """SSRFScanner không có handler → trả về trống."""
     scanner = SSRFScanner(request_handler=None, target_url='https://x.com/fetch')
-    result = scanner.scan()
+    result = asyncio.run(scanner.scan())
     assert 'note' in result
     assert result['vulnerabilities'] == []
 
@@ -42,7 +43,7 @@ def test_path_traversal_payloads():
 def test_path_traversal_no_handler():
     """PathTraversalScanner không có handler."""
     scanner = PathTraversalScanner(request_handler=None, target_url='https://x.com/read')
-    result = scanner.scan()
+    result = asyncio.run(scanner.scan())
     assert 'note' in result
 
 
@@ -58,7 +59,7 @@ def test_ssti_payloads():
 def test_ssti_no_handler():
     """SSTIScanner không có handler."""
     scanner = SSTIScanner(request_handler=None, target_url='https://x.com/hello')
-    result = scanner.scan()
+    result = asyncio.run(scanner.scan())
     assert 'note' in result
 
 
@@ -74,7 +75,7 @@ def test_xxe_payloads():
 def test_xxe_no_handler():
     """XXEScanner không có handler."""
     scanner = XXEScanner(request_handler=None, target_url='https://x.com/upload')
-    result = scanner.scan()
+    result = asyncio.run(scanner.scan())
     assert 'note' in result
 
 

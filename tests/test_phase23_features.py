@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from pathlib import Path
 
@@ -60,17 +61,17 @@ def test_file_upload_scanner_builds_multipart():
 def test_graphql_scanner_queries():
     """GraphQLScanner tạo query introspection đúng."""
     scanner = GraphQLScanner(request_handler=None, graphql_url='https://x.com/graphql')
-    intro = scanner.test_introspection()
+    intro = asyncio.run(scanner.test_introspection())
     assert intro == []  # Không có request handler → không gửi
 
-    result = scanner.scan()
+    result = asyncio.run(scanner.scan())
     assert 'vulnerabilities' in result
 
 
 def test_websocket_scanner_handles_no_url():
     """WebSocketScanner không có URL → trả về trống."""
     scanner = WebSocketScanner(request_handler=None, ws_url=None)
-    result = scanner.scan()
+    result = asyncio.run(scanner.scan())
     assert 'note' in result
     assert result['vulnerabilities'] == []
 

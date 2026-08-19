@@ -66,8 +66,14 @@ class FileUploadScanner:
         content_type_header = f"multipart/form-data; boundary={boundary}"
         return body, content_type_header
 
-    def scan(self):
-        """Chạy toàn bộ file upload scan."""
+    async def scan(self):
+        """Chạy toàn bộ file upload scan.
+
+        LƯU Ý: `request_handler.send_request()` là async (aiohttp) — trước
+        đây hàm này KHÔNG `await`, nên `resp` chỉ là coroutine chưa chạy và
+        scanner luôn kết luận "an toàn" bất kể server thật có chấp nhận file
+        test hay không. Đã sửa: chuyển sang async/await.
+        """
         if not self.upload_url:
             return {'vulnerabilities': [], 'note': 'Không có upload URL để test'}
 
@@ -78,7 +84,7 @@ class FileUploadScanner:
             )
 
             try:
-                resp = self.request_handler.send_request(
+                resp = await self.request_handler.send_request(
                     'POST',
                     self.upload_url,
                     data=body,

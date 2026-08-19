@@ -16,12 +16,18 @@ class GraphQLScanner:
         self.graphql_url = graphql_url
         self.findings = []
 
-    def _send_query(self, query):
-        """Gửi GraphQL query."""
+    async def _send_query(self, query):
+        """Gửi GraphQL query.
+
+        LƯU Ý: `request_handler.send_request()` là async (aiohttp) — trước
+        đây hàm này KHÔNG `await`, nên `resp` chỉ là coroutine chưa chạy;
+        mọi test dựa vào `resp` (introspection/alias-bombing/field-injection)
+        vì vậy luôn thất bại âm thầm. Đã sửa: chuyển sang async/await.
+        """
         if not self.request_handler or not self.graphql_url:
             return None
         try:
-            resp = self.request_handler.send_request(
+            resp = await self.request_handler.send_request(
                 'POST',
                 self.graphql_url,
                 data=json.dumps({'query': query}),
@@ -31,7 +37,7 @@ class GraphQLScanner:
         except Exception:
             return None
 
-    def test_introspection(self):
+    async def test_introspection(self):
         """Kiểm tra Introspection có bật không."""
         query = """
         query {
@@ -40,7 +46,7 @@ class GraphQLScanner:
           }
         }
         """
-        resp = self._send_query(query)
+        resp = await self._send_query(query)
         if resp is None:
             return []
 
@@ -57,7 +63,7 @@ class GraphQLScanner:
             pass
         return []
 
-    def test_alias_bombing(self):
+    async def test_alias_bombing(self):
         """Kiểm tra Alias Bombing (DoS)."""
         query = """
         query {
@@ -74,7 +80,7 @@ class GraphQLScanner:
           f9: __typename
         }
         """
-        resp = self._send_query(query)
+        resp = await self._send_query(query)
         if resp is None:
             return []
 
@@ -92,7 +98,7 @@ class GraphQLScanner:
             }]
         return []
 
-    def test_field_injection(self):
+    async def test_field_injection(self):
         """Kiểm tra Field Injection qua introspection metadata."""
         query = """
         query {
@@ -106,7 +112,7 @@ class GraphQLScanner:
           }
         }
         """
-        resp = self._send_query(query)
+        resp = await self._send_query(query)
         if resp is None:
             return []
 
@@ -124,14 +130,14 @@ class GraphQLScanner:
             pass
         return []
 
-    def scan(self):
+    async def scan(self):
         """Chạy toàn bộ GraphQL scan."""
         if not self.graphql_url:
             return {'vulnerabilities': [], 'note': 'Không có GraphQL URL để test'}
 
         all_findings = []
-        all_findings.extend(self.test_introspection())
-        all_findings.extend(self.test_alias_bombing())
-        all_findings.extend(self.test_field_injection())
+        all_findings.extend(await self.test_introspection())
+        all_findings.extend(await self.test_alias_bombing())
+        all_findings.extend(await self.test_field_injection())
 
         return {'vulnerabilities': all_findings}

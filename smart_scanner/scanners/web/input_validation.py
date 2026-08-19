@@ -36,8 +36,17 @@ class SSRFScanner:
         payloads.extend(encoded)
         return payloads
 
-    def scan(self):
-        """Kiểm tra SSRF qua các canary hosts."""
+    async def scan(self):
+        """Kiểm tra SSRF qua các canary hosts.
+
+        LƯU Ý: trước đây hàm này là `def` (đồng bộ) và gọi
+        `request_handler.send_request()` (một coroutine, vì RequestHandler
+        dùng aiohttp async) mà KHÔNG `await` — nghĩa là `resp` chỉ là một
+        coroutine object chưa từng chạy, không phải response thật.
+        `getattr(resp, 'status_code', 0)` luôn trả về 0 mặc định, nên scanner
+        này ÂM THẦM không bao giờ phát hiện được gì dù target có lỗ hổng thật.
+        Đã sửa: chuyển `scan()` thành async và `await` request thật.
+        """
         if not self.request_handler or not self.target_url:
             return {'vulnerabilities': [], 'note': 'Không thể test SSRF'}
 
@@ -51,7 +60,7 @@ class SSRFScanner:
                     parsed.scheme, parsed.netloc, parsed.path,
                     parsed.params, urllib.parse.urlencode(query, doseq=True), parsed.fragment,
                 ))
-                resp = self.request_handler.send_request('GET', fuzz_url)
+                resp = await self.request_handler.send_request('GET', fuzz_url)
                 status = getattr(resp, 'status_code', 0)
                 text = getattr(resp, 'text', '')
 
@@ -93,8 +102,8 @@ class PathTraversalScanner:
             '....//....//....//windows/win.ini',
         ]
 
-    def scan(self):
-        """Test path traversal."""
+    async def scan(self):
+        """Test path traversal. (xem ghi chú async/await ở SSRFScanner.scan)"""
         if not self.request_handler or not self.target_url:
             return {'vulnerabilities': [], 'note': 'Không thể test path traversal'}
 
@@ -108,7 +117,7 @@ class PathTraversalScanner:
                     parsed.scheme, parsed.netloc, parsed.path,
                     parsed.params, urllib.parse.urlencode(query, doseq=True), parsed.fragment,
                 ))
-                resp = self.request_handler.send_request('GET', fuzz_url)
+                resp = await self.request_handler.send_request('GET', fuzz_url)
                 status = getattr(resp, 'status_code', 0)
                 text = getattr(resp, 'text', '')
 
@@ -148,8 +157,8 @@ class SSTIScanner:
             '${7*\'7\'}',
         ]
 
-    def scan(self):
-        """Test SSTI các template engines phổ biến."""
+    async def scan(self):
+        """Test SSTI các template engines phổ biến. (xem ghi chú async/await ở SSRFScanner.scan)"""
         if not self.request_handler or not self.target_url:
             return {'vulnerabilities': [], 'note': 'Không thể test SSTI'}
 
@@ -163,7 +172,7 @@ class SSTIScanner:
                     parsed.scheme, parsed.netloc, parsed.path,
                     parsed.params, urllib.parse.urlencode(query, doseq=True), parsed.fragment,
                 ))
-                resp = self.request_handler.send_request('GET', fuzz_url)
+                resp = await self.request_handler.send_request('GET', fuzz_url)
                 text = getattr(resp, 'text', '')
 
                 # Nếu '49' xuất hiện = 7*7 được thực thi
@@ -195,15 +204,15 @@ class XXEScanner:
             '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/hostname">]><foo>&xxe;</foo>',
         ]
 
-    def scan(self):
-        """Test XXE bằng file canary."""
+    async def scan(self):
+        """Test XXE bằng file canary. (xem ghi chú async/await ở SSRFScanner.scan)"""
         if not self.request_handler or not self.target_url:
             return {'vulnerabilities': [], 'note': 'Không thể test XXE'}
 
         findings = []
         for payload in self.generate_payloads():
             try:
-                resp = self.request_handler.send_request(
+                resp = await self.request_handler.send_request(
                     'POST', self.target_url,
                     data=payload,
                     headers={'Content-Type': self.content_type},

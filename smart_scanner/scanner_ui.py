@@ -581,29 +581,33 @@ if scan_clicked:
             # 3b: Chuyên sâu Web (optional)
             scan_url = urls[0] if urls else target_url
 
+            # LƯU Ý: jwt/gql/ws/up/ssrf/lfi/ssti/xxe .scan() giờ là async (đã
+            # vá lỗi request_handler.send_request() không được await, khiến
+            # trước đây các scanner này luôn báo "an toàn" giả) — bọc
+            # asyncio.run() giống cors.test_reflected_origin() bên dưới.
             if scan_jwt:
                 # JWT từ Auth header nếu có — demo token
                 jwt = JWTScanner(handler)
-                result = jwt.scan()
+                result = asyncio.run(jwt.scan())
                 if result.get('vulnerabilities'):
                     all_findings.extend(result['vulnerabilities'])
 
             if scan_graphql:
                 gql = GraphQLScanner(handler, graphql_url=target_url.rstrip('/') + '/graphql')
-                result = gql.scan()
+                result = asyncio.run(gql.scan())
                 if result.get('vulnerabilities'):
                     all_findings.extend(result['vulnerabilities'])
 
             if scan_ws:
                 ws_url = target_url.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws'
                 ws = WebSocketScanner(handler, ws_url=ws_url)
-                result = ws.scan()
+                result = asyncio.run(ws.scan())
                 if result.get('vulnerabilities'):
                     all_findings.extend([v for v in result['vulnerabilities'] if v['severity'] != 'Info'])
 
             if scan_upload:
                 up = FileUploadScanner(handler, upload_url=scan_url.rstrip('/') + '/upload')
-                result = up.scan()
+                result = asyncio.run(up.scan())
                 if result.get('vulnerabilities'):
                     all_findings.extend(result['vulnerabilities'])
 
@@ -618,22 +622,22 @@ if scan_clicked:
 
             if scan_ssrf:
                 ssrf = SSRFScanner(handler, target_url=scan_url)
-                result = ssrf.scan()
+                result = asyncio.run(ssrf.scan())
                 all_findings.extend(result.get('vulnerabilities', []))
 
             if scan_lfi:
                 lfi = PathTraversalScanner(handler, target_url=scan_url)
-                result = lfi.scan()
+                result = asyncio.run(lfi.scan())
                 all_findings.extend(result.get('vulnerabilities', []))
 
             if scan_ssti:
                 ssti = SSTIScanner(handler, target_url=scan_url)
-                result = ssti.scan()
+                result = asyncio.run(ssti.scan())
                 all_findings.extend(result.get('vulnerabilities', []))
 
             if scan_xxe:
                 xxe = XXEScanner(handler, target_url=scan_url)
-                result = xxe.scan()
+                result = asyncio.run(xxe.scan())
                 all_findings.extend(result.get('vulnerabilities', []))
 
             # 3b2: CSRF Testing

@@ -16,10 +16,15 @@ class WebSocketScanner:
         self.ws_url = ws_url
         self.findings = []
 
-    def test_origin_validation(self):
+    async def test_origin_validation(self):
         """
         Kiểm tra origin validation qua HTTP request thử (GET upgrade).
         Không thực sự mở WebSocket — chỉ kiểm tra bằng probe request.
+
+        LƯU Ý: `request_handler.send_request()` là async (aiohttp) — trước
+        đây hàm này (và test_authentication) KHÔNG `await`, khiến `resp` chỉ
+        là coroutine chưa chạy và scanner luôn kết luận "an toàn" bất kể
+        server thật có chấp nhận Origin lạ hay không. Đã sửa: async/await.
         """
         if not self.ws_url:
             return []
@@ -37,7 +42,7 @@ class WebSocketScanner:
 
         for origin in malicious_origins:
             try:
-                resp = self.request_handler.send_request(
+                resp = await self.request_handler.send_request(
                     'GET',
                     http_url,
                     headers={
@@ -68,7 +73,7 @@ class WebSocketScanner:
 
         return findings
 
-    def test_authentication(self):
+    async def test_authentication(self):
         """Kiểm tra WebSocket có yêu cầu xác thực không."""
         if not self.ws_url:
             return []
@@ -76,7 +81,7 @@ class WebSocketScanner:
         http_url = self.ws_url.replace('ws://', 'http://').replace('wss://', 'https://')
         try:
             # Gửi upgrade request KHÔNG có cookie/token
-            resp = self.request_handler.send_request(
+            resp = await self.request_handler.send_request(
                 'GET',
                 http_url,
                 headers={
@@ -110,14 +115,14 @@ class WebSocketScanner:
             'confidence': 'Low',
         }]
 
-    def scan(self):
+    async def scan(self):
         """Chạy toàn bộ WebSocket scan."""
         if not self.ws_url:
             return {'vulnerabilities': [], 'note': 'Không có WebSocket URL để test'}
 
         all_findings = []
-        all_findings.extend(self.test_origin_validation())
-        all_findings.extend(self.test_authentication())
+        all_findings.extend(await self.test_origin_validation())
+        all_findings.extend(await self.test_authentication())
         all_findings.extend(self.test_rate_limiting())
 
         return {'vulnerabilities': all_findings}
