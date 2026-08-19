@@ -1,3 +1,5 @@
+# disclaimer
+CẢNH BÁO: Công cụ này chỉ được sử dụng trên hệ thống bạn sở hữu hoặc đã có ủy quyền kiểm thử bằng văn bản. Sử dụng sai mục đích, không được phép có thể vi phạm pháp luật. Người vận hành hoàn toàn chịu trách nhiệm về việc sử dụng công cụ này.
 # 🛡️ AegisScan
 
 Nền tảng quét & khai thác lỗ hổng bảo mật ("Security Scanning & Exploitation
