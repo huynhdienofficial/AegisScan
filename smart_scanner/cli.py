@@ -15,6 +15,12 @@ from correlation_engine import CorrelationEngine
 from storage import SQLiteStorage
 from report_exporters import SARIFExporter, CSVExporter
 from agents import AgentlessCollector
+from scanners.web.input_validation import SSRFScanner, PathTraversalScanner, SSTIScanner, XXEScanner
+from scanners.web.security_misconfig import CORSScanner, CSRFScanner
+from scanners.web.jwt_scanner import JWTScanner
+from scanners.web.graphql_scanner import GraphQLScanner
+
+EXTRA_SCAN_CHOICES = ('ssrf', 'lfi', 'ssti', 'xxe', 'cors', 'csrf', 'graphql', 'jwt')
 
 
 def get_scope_guard_config(args):
@@ -69,9 +75,23 @@ def main():
     parser.add_argument('--agentless-ports', default='',
                         help='Infra Scan Engine (Agentless): danh sách port kiểm tra open/banner '
                              'trên hostname của target, phân cách bằng dấu phẩy (vd: 22,443,3306)')
+    parser.add_argument('--extra-scans', default='',
+                        help=f"Scanner bổ sung (đặc tả v3.1) chạy trên trang đầu crawl được, phân "
+                             f"cách bằng dấu phẩy. Chọn từ: {', '.join(EXTRA_SCAN_CHOICES)}")
+    parser.add_argument('--jwt-token', default='',
+                        help="Token để test với --extra-scans jwt (bắt buộc nếu bật jwt)")
+    parser.add_argument('--graphql-url', default='',
+                        help="URL endpoint GraphQL cho --extra-scans graphql (mặc định: <url>/graphql)")
 
     args = parser.parse_args()
-    
+
+    extra_scans = [s.strip() for s in args.extra_scans.split(',') if s.strip()]
+    invalid_extra = [s for s in extra_scans if s not in EXTRA_SCAN_CHOICES]
+    if invalid_extra:
+        print(f"❌ --extra-scans không hợp lệ: {', '.join(invalid_extra)} "
+              f"(chọn từ: {', '.join(EXTRA_SCAN_CHOICES)})")
+        sys.exit(1)
+
     print(f"🛡️ Smart Security Scanner")
     print(f"Target: {args.url}")
     print(f"Profile: {args.profile}")
@@ -225,6 +245,53 @@ def main():
     
     print(f"✅ Found {len(vulns)} vulnerabilities")
 
+    # ─── Scanner bổ sung (đặc tả v3.1 §19) — trước đây chỉ chạy được từ
+    # scanner_ui.py (Streamlit), CLI chỉ có sqli/xss/rce. Wire thêm 8 scanner
+    # qua --extra-scans (đã vá lỗi async/await khiến chúng trước đây luôn
+    # báo "an toàn" giả — xem scanners/web/input_validation.py và các file
+    # jwt_scanner.py/graphql_scanner.py/security_misconfig.py).
+    extra_findings = []
+    if extra_scans:
+        scan_url = urls[0] if urls else args.url
+        print(f"🧪 Extra scans ({', '.join(extra_scans)}) trên {scan_url}...")
+
+        if 'ssrf' in extra_scans:
+            r = asyncio.run(SSRFScanner(handler, target_url=scan_url).scan())
+            extra_findings.extend(r.get('vulnerabilities', []))
+        if 'lfi' in extra_scans:
+            r = asyncio.run(PathTraversalScanner(handler, target_url=scan_url).scan())
+            extra_findings.extend(r.get('vulnerabilities', []))
+        if 'ssti' in extra_scans:
+            r = asyncio.run(SSTIScanner(handler, target_url=scan_url).scan())
+            extra_findings.extend(r.get('vulnerabilities', []))
+        if 'xxe' in extra_scans:
+            r = asyncio.run(XXEScanner(handler, target_url=scan_url).scan())
+            extra_findings.extend(r.get('vulnerabilities', []))
+        if 'cors' in extra_scans:
+            cors = CORSScanner(handler, target_url=scan_url)
+            try:
+                extra_findings.extend(asyncio.run(cors.test_reflected_origin()))
+            except Exception:
+                pass
+        if 'csrf' in extra_scans:
+            csrf = CSRFScanner(handler, target_url=scan_url, method='POST', form_action=scan_url)
+            if forms:
+                csrf.set_form_data(forms[0].get('inputs', []))
+            extra_findings.extend(csrf.scan())
+        if 'graphql' in extra_scans:
+            gql_url = args.graphql_url or (args.url.rstrip('/') + '/graphql')
+            r = asyncio.run(GraphQLScanner(handler, graphql_url=gql_url).scan())
+            extra_findings.extend(r.get('vulnerabilities', []))
+        if 'jwt' in extra_scans:
+            if not args.jwt_token:
+                print("   ⚠️  --extra-scans jwt cần --jwt-token — bỏ qua")
+            else:
+                jwt = JWTScanner(handler, jwt_token=args.jwt_token, jwt_header={'url': scan_url})
+                r = asyncio.run(jwt.scan())
+                extra_findings.extend(r.get('vulnerabilities', []))
+
+        print(f"✅ Extra scans found {len(extra_findings)} vulnerabilities")
+
     # Save report
     manager.export_results(args.output)
     print(f"📄 Report saved to {args.output}")
@@ -237,8 +304,9 @@ def main():
     unified = correlator.normalize_and_correlate({
         'active_scanner': vulns,
         'agentless_collector': infra_findings,
+        'extra_scans': extra_findings,
     })
-    total_raw = len(vulns) + len(infra_findings)
+    total_raw = len(vulns) + len(infra_findings) + len(extra_findings)
     duplicates_merged = total_raw - len(unified)
     if duplicates_merged > 0:
         print(f"🔗 Correlation Engine: gộp {duplicates_merged} finding trùng lặp "
@@ -306,7 +374,12 @@ def main():
     safety_stats = safety_manager.get_stats()
     print(f"  - Payloads blocked by safety: {safety_stats['total_blocked']}")
     print(f"  - Vulnerabilities found: {len(vulns)}")
-    
+    if extra_scans:
+        print(f"  - Extra scans ({', '.join(extra_scans)}): {len(extra_findings)} findings")
+    if args.agentless_ports:
+        print(f"  - Agentless port findings: {len(infra_findings)}")
+    print(f"  - Unified findings (sau dedup): {len(unified)}")
+
     if vulns:
         print("\n📋 Top vulnerabilities:")
         for v in vulns[:5]:

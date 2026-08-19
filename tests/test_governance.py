@@ -1,3 +1,4 @@
+import asyncio
 import sys
 import json
 import tempfile
@@ -167,7 +168,7 @@ def test_business_logic_scanner():
     scanner = BusinessLogicScanner(request_handler=None)
 
     # Không có handler → không test được
-    result = scanner.scan_price_logic('/checkout')
+    result = asyncio.run(scanner.scan_price_logic('/checkout'))
     assert 'note' in result
 
     # Verify payload generation

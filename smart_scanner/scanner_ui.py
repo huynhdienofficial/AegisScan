@@ -49,6 +49,7 @@ from scanners.secrets_scanner import SecretsScanner, DockerScanner
 
 from assets.asset_manager import Asset, AssetInventory
 from finding_management import FindingManager
+from correlation_engine import CorrelationEngine
 from threat_intel import ThreatIntelEngine
 from governance import (
     FirewallRuleReview, ExploitManifestRegistry, BusinessImpactScoring,
@@ -656,12 +657,19 @@ if scan_clicked:
             if scan_idor:
                 authz = AuthorizationScanner(handler)
                 # Demo: so sánh response có/không có auth header trên resource
+                # LƯU Ý: handler.send_request() là async — trước đây gọi không
+                # await ở đây khiến unauth_resp/auth_resp chỉ là coroutine
+                # chưa chạy, IDOR check luôn không phát hiện được gì.
                 try:
-                    unauth_resp = handler.send_request('GET', scan_url)
-                    auth_resp = handler.send_request(
-                        'GET', scan_url,
-                        headers={'Authorization': 'Bearer demo-token'},
-                    )
+                    async def _idor_requests():
+                        r1 = await handler.send_request('GET', scan_url)
+                        r2 = await handler.send_request(
+                            'GET', scan_url,
+                            headers={'Authorization': 'Bearer demo-token'},
+                        )
+                        return r1, r2
+
+                    unauth_resp, auth_resp = asyncio.run(_idor_requests())
                     all_findings.extend(authz.test_unauthenticated_access(
                         unauth_resp, resource_desc=scan_url,
                     ))
@@ -711,11 +719,14 @@ if scan_clicked:
                 all_findings.extend(http_findings)
 
             # 3c: Nâng cao — WAF Evasion, Smuggling, Race
+            # LƯU Ý: WAFEvasionScanner.scan()/RequestSmugglingScanner.scan()
+            # giờ là async (đã vá lỗi request_handler.send_request() không
+            # được await — cùng loại bug tìm thấy ở các scanner khác).
             if scan_waf:
                 waf = WAFEvasionScanner(handler)
                 for u in urls[:3]:
                     for p in params[:3]:
-                        result = waf.scan(u, p)
+                        result = asyncio.run(waf.scan(u, p))
                         if result:
                             waf_findings = [{
                                 'type': 'WAF Evasion',
@@ -730,7 +741,7 @@ if scan_clicked:
 
             if scan_smuggling:
                 smuggling = RequestSmugglingScanner(handler, target_url=scan_url)
-                result = smuggling.scan()
+                result = asyncio.run(smuggling.scan())
                 if result.get('vulnerabilities'):
                     all_findings.extend(result['vulnerabilities'])
 
@@ -923,23 +934,30 @@ services:
                     asset = Asset.from_url(target_url, name=f"Web: {urlparse(target_url).hostname}")
                     inv.add_asset(asset)
                     if scan_finding:
+                        # Trước đây khối này tạo `fm` rồi bỏ đi ngay — chỉ
+                        # ingest raw findings (giữ nguyên trùng lặp giữa các
+                        # scanner khác nhau), không dedup, không dùng
+                        # suppression/lifecycle. Nay route qua CorrelationEngine
+                        # trước (dedup theo Asset+Endpoint+CWE, đặc tả §25) rồi
+                        # mới ingest vào FindingManager qua cầu nối thật.
+                        asset_id = asset.asset_id or f"ast-{hash(target_url) % 1000:04d}"
+                        correlator = CorrelationEngine(asset=asset_id)
+                        unified = correlator.normalize_and_correlate({'web_dast_ui': all_findings})
                         fm = FindingManager()
-                        for fnd in all_findings[:10]:
-                            fm.create_finding(
-                                asset_id=asset.asset_id or f"ast-{hash(target_url) % 1000:04d}",
-                                rule_id=fnd.get('type', 'UNKNOWN'),
-                                severity=fnd.get('severity', fnd.get('confidence', 'Low')),
-                                title=fnd.get('type', 'Finding từ UI scan'),
-                                description=fnd.get('detail', ''),
-                                endpoint=fnd.get('url', ''),
-                                parameter=fnd.get('parameter', ''),
-                                payload=fnd.get('payload', ''),
-                                confidence=fnd.get('confidence', 'Low'),
-                            )
+                        fm.import_from_correlation_engine(unified, asset_id=asset_id)
+                        dup_groups = fm.correlate_duplicates()
+                        fm_stats = fm.get_stats()
+                        duplicates_merged = len(all_findings) - len(unified)
+
                         governance_findings.append({
                             'type': 'Finding Management',
                             'severity': 'Info',
-                            'detail': f"Đã ingest {len(all_findings[:10])} findings vào Finding Manager",
+                            'detail': (
+                                f"Correlation Engine gộp {duplicates_merged} finding trùng lặp trong "
+                                f"{len(all_findings)} raw finding → {len(unified)} finding duy nhất. "
+                                f"FindingManager: {fm_stats['total']} finding quản lý vòng đời, "
+                                f"{len(dup_groups)} nhóm trùng nội bộ, {fm_stats['suppressed']} suppressed."
+                            ),
                             'confidence': 'High',
                             'url': target_url,
                         })
@@ -1106,7 +1124,7 @@ services:
                 # 4B11: Business Logic Testing
                 if scan_business:
                     biz = BusinessLogicScanner(handler, base_url=target_url.rstrip('/'))
-                    biz_result = biz.scan_price_logic('/api/checkout')
+                    biz_result = asyncio.run(biz.scan_price_logic('/api/checkout'))
                     biz_findings = biz_result.get('vulnerabilities', [])
                     governance_findings.extend(biz_findings)
 

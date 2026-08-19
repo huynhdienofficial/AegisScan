@@ -129,6 +129,44 @@ class FindingManager:
     def get_finding(self, finding_id):
         return self.findings.get(finding_id)
 
+    def create_finding_from_unified(self, unified_finding, asset_id=None):
+        """Tạo Finding từ một UnifiedFinding (correlation_engine.py).
+
+        Đây là cầu nối giữa Correlation & Deduplication Engine (chuẩn hoá +
+        dedup đa nguồn theo đặc tả §25) và FindingManager (vòng đời
+        Suspected→Verified→Confirmed→Resolved/Accepted Risk + suppression
+        workflow theo đặc tả §11). Trước đây hai module này tồn tại song
+        song, không kết nối — CorrelationEngine dedup xong không đi đâu cả,
+        còn FindingManager tự dedup lại bằng key khác (correlate_duplicates).
+
+        Confidence do CorrelationEngine tính (Suspected/Verified/Confirmed,
+        tăng dần theo số detection source đồng thuận) được dùng làm status
+        khởi tạo — một finding được ≥2 scanner xác nhận sẽ vào thẳng
+        'confirmed' thay vì phải nâng cấp thủ công từng bước.
+        """
+        return self.create_finding(
+            asset_id=asset_id or unified_finding.asset,
+            rule_id=unified_finding.cwe or unified_finding.vulnerability,
+            severity=unified_finding.severity,
+            title=unified_finding.vulnerability,
+            description=unified_finding.evidence,
+            evidence={'detail': unified_finding.evidence,
+                      'sources': sorted(unified_finding.detection_sources)},
+            cwe=unified_finding.cwe,
+            cvss=unified_finding.cvss,
+            owasp=unified_finding.owasp_mapping,
+            source=unified_finding.detection_source,
+            detection_method=unified_finding.detection_source,
+            status=unified_finding.confidence.lower(),
+            endpoint=unified_finding.location,
+            confidence=unified_finding.confidence,
+        )
+
+    def import_from_correlation_engine(self, unified_findings, asset_id=None):
+        """Ingest toàn bộ output đã dedup của CorrelationEngine — mỗi
+        UnifiedFinding trở thành 1 Finding có đầy đủ vòng đời/suppression."""
+        return [self.create_finding_from_unified(uf, asset_id=asset_id) for uf in unified_findings]
+
     def list_findings(self, status=None, severity=None, asset_id=None):
         """Lọc danh sách findings."""
         result = []
@@ -144,14 +182,21 @@ class FindingManager:
 
     def correlate_duplicates(self):
         """
-        Duplicate Correlation — gom finding trùng theo endpoint + rule + evidence hash.
-        Theo đặc tả v3.1 mục 52.
+        Duplicate Correlation — gom finding trùng theo đúng khoá đặc tả §25.1:
+        Asset + Endpoint/URL + Vulnerability Class (CWE) + Parameter.
+
+        LƯU Ý: trước đây key gồm cả `evidence_hash()` (băm SHA-256 của toàn bộ
+        evidence dict) — nghĩa là 2 finding CÙNG lỗ hổng, CÙNG endpoint,
+        CÙNG rule nhưng evidence hơi khác nhau (vd response body khác 1 ký
+        tự do timestamp/token động) sẽ KHÔNG được coi là trùng, ngược lại
+        chính xác điều mà Correlation Engine (đặc tả §25) tồn tại để giải
+        quyết. Đã bỏ evidence_hash khỏi khoá, dùng đúng tổ hợp spec quy định.
         """
         groups = {}
         for f in self.findings.values():
             if f.suppressed:
                 continue
-            key = f"{f.endpoint}|{f.rule_id}|{f.evidence_hash()}"
+            key = f"{f.asset_id}|{f.endpoint}|{f.cwe or f.rule_id}|{f.parameter or ''}"
             if key not in groups:
                 groups[key] = []
             groups[key].append(f)

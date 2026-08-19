@@ -411,8 +411,16 @@ class BusinessLogicScanner:
             {'coupon': 'FREE', 'quantity': -1},    # quantity âm + coupon
         ]
 
-    def scan_price_logic(self, endpoint, param_names=('price', 'quantity')):
-        """Test manipulation price/quantity."""
+    async def scan_price_logic(self, endpoint, param_names=('price', 'quantity')):
+        """Test manipulation price/quantity.
+
+        LƯU Ý: `request_handler.send_request()` là async (aiohttp) — trước
+        đây hàm này (và scan_coupon_abuse) KHÔNG `await`, nên `resp` chỉ là
+        coroutine chưa chạy; `status` luôn là giá trị mặc định 0, không bao
+        giờ khớp `in (200, 201, 202)` → scanner luôn trả về 0 finding dù
+        server có chấp nhận giá trị bất thường hay không. Đã sửa: async/await
+        (cùng loại lỗi đã tìm và vá ở các scanner khác trong repo).
+        """
         if not self.request_handler or not self.base_url:
             return {'vulnerabilities': [], 'note': 'Không thể test business logic'}
 
@@ -421,7 +429,7 @@ class BusinessLogicScanner:
 
         for name, data in payloads.items():
             try:
-                resp = self.request_handler.send_request(
+                resp = await self.request_handler.send_request(
                     'POST', self.base_url + endpoint,
                     data=data,
                     headers={'Content-Type': 'application/json'},
@@ -443,15 +451,15 @@ class BusinessLogicScanner:
 
         return {'vulnerabilities': findings}
 
-    def scan_coupon_abuse(self, endpoint):
-        """Test coupon abuse."""
+    async def scan_coupon_abuse(self, endpoint):
+        """Test coupon abuse. (xem ghi chú async/await ở scan_price_logic)"""
         if not self.request_handler:
             return {'vulnerabilities': [], 'note': 'Không thể test coupon'}
 
         findings = []
         for payload in self.generate_coupon_payloads():
             try:
-                resp = self.request_handler.send_request(
+                resp = await self.request_handler.send_request(
                     'POST', self.base_url + endpoint,
                     data=json.dumps(payload),
                     headers={'Content-Type': 'application/json'},

@@ -1,3 +1,4 @@
+import asyncio
 import sys
 import json
 from pathlib import Path
@@ -95,7 +96,7 @@ def test_waf_evasion_generates_variants():
 def test_request_smuggling_no_handler():
     """RequestSmugglingScanner không có request_handler."""
     scanner = RequestSmugglingScanner(request_handler=None, target_url='https://x.com')
-    result = scanner.scan()
+    result = asyncio.run(scanner.scan())
     assert 'note' in result
 
 

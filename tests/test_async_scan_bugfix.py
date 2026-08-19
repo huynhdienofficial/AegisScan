@@ -31,6 +31,8 @@ from scanners.web.jwt_scanner import JWTScanner
 from scanners.web.graphql_scanner import GraphQLScanner
 from scanners.web.websocket_scanner import WebSocketScanner
 from scanners.web.file_upload_scanner import FileUploadScanner
+from scanners.web.advanced_scanners import WAFEvasionScanner, RequestSmugglingScanner
+from governance import BusinessLogicScanner
 
 
 class FakeAsyncHandler:
@@ -113,3 +115,29 @@ def test_file_upload_scanner_detects_with_real_async_handler():
     scanner = FileUploadScanner(request_handler=handler, upload_url='https://x.com/upload')
     result = asyncio.run(scanner.scan())
     assert any(v['type'] == 'File Upload Bypass' for v in result['vulnerabilities'])
+
+
+def test_waf_evasion_scanner_detects_with_real_async_handler():
+    handler = FakeAsyncHandler(status_code=200, text="' OR 1=1--")
+    scanner = WAFEvasionScanner(request_handler=handler)
+    result = asyncio.run(scanner.scan('https://x.com/search?q=1', 'q', payloads=["' OR 1=1--"]))
+    assert len(result) > 0, (
+        "WAFEvasionScanner phải phát hiện được khi payload encoded được phản chiếu trong response"
+    )
+
+
+def test_request_smuggling_scanner_detects_with_real_async_handler():
+    handler = FakeAsyncHandler(status_code=200, text='ok')
+    scanner = RequestSmugglingScanner(request_handler=handler, target_url='https://x.com/')
+    result = asyncio.run(scanner.scan())
+    assert len(result['vulnerabilities']) > 0
+
+
+def test_business_logic_scanner_detects_with_real_async_handler():
+    handler = FakeAsyncHandler(status_code=200, text='{"status": "ok"}')
+    scanner = BusinessLogicScanner(request_handler=handler, base_url='https://x.com')
+    result = asyncio.run(scanner.scan_price_logic('/checkout'))
+    assert len(result['vulnerabilities']) > 0, (
+        "BusinessLogicScanner phải phát hiện khi server chấp nhận giá trị "
+        "price/quantity bất thường (status 200, không có 'error' trong response)"
+    )

@@ -47,8 +47,16 @@ class WAFEvasionScanner:
                 continue
         return variants
 
-    def scan(self, url, parameter, payloads=None):
-        """Thử payload qua các encoding khác nhau."""
+    async def scan(self, url, parameter, payloads=None):
+        """Thử payload qua các encoding khác nhau.
+
+        LƯU Ý: `request_handler.send_request()` là async (aiohttp) — trước
+        đây hàm này KHÔNG `await`, nên `resp` chỉ là coroutine chưa chạy và
+        scanner luôn kết luận "an toàn" bất kể WAF có thực sự bị bypass hay
+        không. Đã sửa: chuyển sang async/await (cùng loại lỗi đã tìm thấy ở
+        input_validation.py/jwt_scanner.py/graphql_scanner.py/websocket_scanner.py/
+        file_upload_scanner.py).
+        """
         payloads = payloads or self.BASE_PAYLOADS
         all_findings = []
 
@@ -72,7 +80,7 @@ class WAFEvasionScanner:
                         (parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment)
                     )
 
-                    resp = self.request_handler.send_request('GET', fuzz_url)
+                    resp = await self.request_handler.send_request('GET', fuzz_url)
                     status = getattr(resp, 'status_code', 0)
                     text = getattr(resp, 'text', '')
 
@@ -110,19 +118,19 @@ class RequestSmugglingScanner:
         self.request_handler = request_handler
         self.target_url = target_url
 
-    def _send_raw(self, body, headers=None):
-        """Gửi request với header tùy biến."""
+    async def _send_raw(self, body, headers=None):
+        """Gửi request với header tùy biến. (xem ghi chú async/await ở WAFEvasionScanner.scan)"""
         if not self.request_handler or not self.target_url:
             return None
         try:
-            return self.request_handler.send_request(
+            return await self.request_handler.send_request(
                 'POST', self.target_url, data=body,
                 headers=headers or {'Content-Type': 'application/x-www-form-urlencoded'},
             )
         except Exception:
             return None
 
-    def test_cl_te(self):
+    async def test_cl_te(self):
         """Test Content-Length vs Transfer-Encoding mâu thuẫn."""
         body = (
             'POST / HTTP/1.1\r\n'
@@ -134,7 +142,7 @@ class RequestSmugglingScanner:
             '\r\n'
             'X'
         )
-        resp = self._send_raw('0\r\n\r\nX', {
+        resp = await self._send_raw('0\r\n\r\nX', {
             'Content-Length': '4',
             'Transfer-Encoding': 'chunked',
         })
@@ -149,21 +157,21 @@ class RequestSmugglingScanner:
             'confidence': 'Low',
         }]
 
-    def test_te_cl(self):
+    async def test_te_cl(self):
         """Test TE.CL — Transfer-Encoding trước, Content-Length sau."""
-        resp = self._send_raw('X', {
+        resp = await self._send_raw('X', {
             'Transfer-Encoding': 'chunked',
             'Content-Length': '1',
         })
         return []  # Khó phát hiện tự động — đánh dấu cho xác minh thủ công
 
-    def scan(self):
+    async def scan(self):
         """Chạy toàn bộ smuggling scan."""
         if not self.target_url or not self.request_handler:
             return {'vulnerabilities': [], 'note': 'Không thể test request smuggling'}
 
         all_findings = []
-        all_findings.extend(self.test_cl_te())
+        all_findings.extend(await self.test_cl_te())
         return {'vulnerabilities': all_findings}
 
 
