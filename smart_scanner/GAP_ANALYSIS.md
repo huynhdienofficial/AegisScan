@@ -27,6 +27,7 @@ import nó. Bảng dưới phân biệt rõ hai trạng thái đó.
 | Risk scoring | `report_exporters.MultiFactorRiskEngine.calculate_from_findings` | Nguồn tính điểm DUY NHẤT — 3 module khác (`fingerprint/attack_surface/risk_engine.py`, `.../exploit_manager.py`, `utils/risk_analyzer.py`) delegate sang đây thay vì tự tính |
 | `finding_management.FindingManager` ↔ `correlation_engine.CorrelationEngine` | `scanner_ui.py` (khối 4B1), `tests/test_correlation_engine.py` | `create_finding_from_unified`/`import_from_correlation_engine` — CorrelationEngine dedup trước, FindingManager quản lý vòng đời/suppression sau. `correlate_duplicates()` cũng đổi khoá theo đúng spec §25.1 (Asset+Endpoint+CWE+Parameter, bỏ evidence_hash quá chặt) |
 | SSRF/PathTraversal/SSTI/XXE/CORS/CSRF/GraphQL/JWT | `cli.py` (`--extra-scans`) | Trước đây chỉ chạy trong `scanner_ui.py`; nay CLI cũng chạy được, kết quả đưa vào Correlation Engine như nguồn thứ 3 |
+| `cli.py main()` | `tests/test_cli_integration.py` | Test tích hợp mock `AsyncCrawlerEngine.start`/`RequestHandler.send_request` (không chạm mạng thật) — verify full flow, dry-run không gọi network, target ngoài allowlist bị chặn, storage/delta/SARIF/CSV đều được ghi |
 
 ## 3. Tồn tại, có test, nhưng CHƯA kết nối vào entry point (mồ côi)
 
@@ -72,4 +73,4 @@ khôi phục bản vá cho lô đầu tiên).
 
 1. WebSocket/FileUpload/Cloud/K8s/Database/OS-hardening scanner vẫn chưa có cờ CLI — cần thiết kế input format phù hợp (file config JSON?) thay vì URL đơn giản.
 2. `governance.ScanScheduler` vẫn chỉ là hàng đợi in-memory, không có daemon thật chạy theo `cron_expr`.
-3. Viết test tích hợp cho `cli.py main()` (hiện chỉ verify thủ công qua chạy thật, chưa có test tự động — cần mock network để không phụ thuộc target thật).
+3. `agents.AgentCollector`/`AgentManager` và `report_exporters.ReportBuilder.build_standard_report` vẫn mồ côi (mục 3) — chưa có subcommand/entry point phù hợp.
