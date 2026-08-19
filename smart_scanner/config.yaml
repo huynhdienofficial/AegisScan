@@ -1,6 +1,6 @@
-# Cấu hình tổng thể cho Smart Scanner
+# Cấu hình tổng thể cho AegisScan
 general:
-  name: "Smart Security Scanner"
+  name: "AegisScan"
   version: "1.0.0"
   debug: false
 
@@ -8,7 +8,7 @@ general:
 scope:
   allowlist: []          # VD: ["example.com", "*.staging.com", "192.168.1.0/24"]
   denylist: []           # VD: ["blocked.com", "10.0.0.0/8"]
-  local_lab_mode: false  # Bật để cho phép quét localhost/LAN
+  local_lab_mode: true   # Mặc định BẬT — cho phép quét localhost/LAN (false để chặn)
   dry_run: false         # Bật để xem request dự kiến mà không gửi
 
 # Safety Profile

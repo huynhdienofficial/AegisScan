@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================
-#   🚀 Smart Security Scanner — Chạy UI macOS
+#   🚀 AegisScan — Chạy UI macOS
 #   Cách dùng:  ./run_ui_macos.sh
 # ============================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +16,7 @@ fi
 
 cd smart_scanner
 echo "============================================"
-echo "   Smart Security Scanner - Đang khởi động"
+echo "   AegisScan - Đang khởi động"
 echo "============================================"
 echo "Mở trình duyệt tại: http://127.0.0.1:8501"
 echo "--------------------------------------------"

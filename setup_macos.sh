@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================
-#   🛡️ Smart Security Scanner — Setup macOS
+#   🛡️ AegisScan — Setup macOS
 #   Cách dùng:  ./setup_macos.sh
 # ============================================
 set -e
@@ -11,7 +11,7 @@ cd "$SCRIPT_DIR"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 echo "============================================"
-echo "   Smart Security Scanner - macOS Setup"
+echo "   AegisScan - macOS Setup"
 echo "============================================"
 
 # 1. Kiểm tra Python >= 3.9

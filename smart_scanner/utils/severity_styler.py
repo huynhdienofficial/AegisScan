@@ -7,23 +7,23 @@ High/Critical → đỏ | Medium → vàng | Low → xanh
 def border_style(severity):
     """Trả về CSS border-left color cho card theo severity."""
     styles = {
-        'critical': 'border-left-color: #f85149;',
-        'high': 'border-left-color: #f85149;',
-        'medium': 'border-left-color: #d29922;',
-        'low': 'border-left-color: #58a6ff;',
+        'critical': 'border-left-color: #cf222e;',
+        'high': 'border-left-color: #cf222e;',
+        'medium': 'border-left-color: #9a6700;',
+        'low': 'border-left-color: #0969da;',
     }
-    return styles.get(severity.lower(), 'border-left-color: #30363d;')
+    return styles.get(severity.lower(), 'border-left-color: #d0d7de;')
 
 
 def title_color(severity):
     """Trả về màu chữ cho tiêu đề theo severity."""
     colors = {
-        'critical': '#f85149',
-        'high': '#f85149',
-        'medium': '#d29922',
-        'low': '#58a6ff',
+        'critical': '#cf222e',
+        'high': '#cf222e',
+        'medium': '#9a6700',
+        'low': '#0969da',
     }
-    return colors.get(severity.lower(), '#e6edf3')
+    return colors.get(severity.lower(), '#1f2328')
 
 
 def badge_class(severity):

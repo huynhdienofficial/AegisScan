@@ -1,14 +1,14 @@
 @echo off
-title Smart Security Scanner - Build Windows
+title AegisScan - Build Windows
 rem ============================================
-rem   Build Smart Security Scanner - Windows
+rem   Build AegisScan - Windows
 rem   Cach dung:  build_windows.bat
 rem   Tuy chon:  set BUILD_MODE=onefile  (1 file) | onedir (mac dinh)
 rem ============================================
 cd /d "%~dp0"
 
 echo ============================================
-echo    Dong goi Smart Security Scanner (Windows)
+echo    Dong goi AegisScan (Windows)
 echo ============================================
 
 python --version
@@ -38,9 +38,9 @@ if errorlevel 1 goto :error
 echo.
 echo ============================================
 echo    HOAN TAT! Ung dung tai:
-echo    smart_scanner\dist\SmartSecurityScanner\
+echo    smart_scanner\dist\AegisScan\
 echo.
-echo    Chay:  dist\SmartSecurityScanner\SmartSecurityScanner.exe
+echo    Chay:  dist\AegisScan\AegisScan.exe
 echo    Mo browser tai: http://127.0.0.1:8501
 echo ============================================
 pause

@@ -1,8 +1,8 @@
 @echo off
-title Smart Security Scanner - UI
+title AegisScan - UI
 cd /d "%~dp0"
 echo ============================================
-echo    Smart Security Scanner - Dang khoi dong
+echo    AegisScan - Dang khoi dong
 echo ============================================
 echo.
 echo Mo trinh duyet tai: http://127.0.0.1:8501

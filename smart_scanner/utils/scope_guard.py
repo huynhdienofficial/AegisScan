@@ -5,10 +5,11 @@ from urllib.parse import urlparse
 
 class ScopeGuard:
     """Kiểm soát phạm vi quét (Scope Guard / Authorization Gate).
-    
-    - Allowlist domain/IP/CIDR
-    - Từ chối target ngoài allowlist
-    - Chặn localhost/private target nếu chưa bật Local Lab Mode
+
+    ⚠️ Mặc định: cho phép quét MỌI trang (mọi domain + localhost/LAN).
+    - Allowlist domain/IP/CIDR — chỉ giới hạn khi được cấu hình tường minh
+    - Denylist luôn chặn (chặn tường minh của người dùng)
+    - Local Lab Mode mặc định BẬT → localhost/private IP được phép quét
     - Dry-run để xem request dự kiến
     """
 
@@ -25,7 +26,8 @@ class ScopeGuard:
         self.config = config or {}
         self.allowlist = set(self.config.get('allowlist', []))
         self.denylist = set(self.config.get('denylist', []))
-        self.local_lab_mode = self.config.get('local_lab_mode', False)
+        # Mặc định BẬT — cho phép quét localhost/LAN (đổi thành False nếu muốn chặn)
+        self.local_lab_mode = self.config.get('local_lab_mode', True)
         self.dry_run = self.config.get('dry_run', False)
         self.authorized_targets = set()
 
@@ -53,13 +55,13 @@ class ScopeGuard:
                           f'Allowlist hiện tại: {", ".join(sorted(self.allowlist)) or "(trống)"}'
             }
 
-        # Kiểm tra localhost/private
+        # Kiểm tra localhost/private — mặc định BẬT nên chỉ chặn khi bị tắt tường minh
         is_local = self._is_private_or_local(hostname)
         if is_local and not self.local_lab_mode:
             return {
                 'allowed': False,
-                'reason': f'Target là địa chỉ local/private ({hostname}). '
-                          f'Cần bật Local Lab Mode để quét localhost/LAN.'
+                'reason': f'Target là địa chỉ local/private ({hostname}) nhưng '
+                          f'Local Lab Mode đã bị tắt. Bật lại để quét localhost/LAN.'
             }
 
         # Yêu cầu xác nhận quyền cho active scan
@@ -87,7 +89,7 @@ class ScopeGuard:
         if self.allowlist and not self._matches_allowlist(parsed.hostname):
             return False
 
-        # Local target cần Local Lab Mode
+        # Chỉ chặn local/private khi Local Lab Mode bị tắt (mặc định BẬT)
         if self._is_private_or_local(parsed.hostname) and not self.local_lab_mode:
             return False
 

@@ -97,7 +97,7 @@ class SBOMGenerator:
             'version': 1,
             'metadata': {
                 'timestamp': datetime.now().isoformat(),
-                'tools': [{'vendor': 'Smart Scanner', 'name': 'SBOMGenerator', 'version': '3.1.0'}],
+                'tools': [{'vendor': 'AegisScan', 'name': 'SBOMGenerator', 'version': '3.1.0'}],
             },
             'components': self.components,
         }
@@ -108,11 +108,11 @@ class SBOMGenerator:
             'spdxVersion': 'SPDX-2.3',
             'dataLicense': 'CC0-1.0',
             'SPDXID': 'SPDXRef-DOCUMENT',
-            'name': 'Smart Scanner SBOM',
+            'name': 'AegisScan SBOM',
             'documentNamespace': f'https://example.com/sbom/{hashlib.md5(str(datetime.now()).encode()).hexdigest()[:16]}',
             'creationInfo': {
                 'created': datetime.now().isoformat(),
-                'creators': ['Tool: Smart Scanner 3.1.0'],
+                'creators': ['Tool: AegisScan 3.1.0'],
             },
             'packages': [
                 {

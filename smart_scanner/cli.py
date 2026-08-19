@@ -36,13 +36,13 @@ def get_scope_guard_config(args):
     return {
         'allowlist': allowlist,
         'denylist': denylist,
-        'local_lab_mode': args.local_lab,
+        'local_lab_mode': args.local_lab if args.local_lab is not None else True,
         'dry_run': args.dry_run,
     }
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Smart Security Scanner CLI')
+    parser = argparse.ArgumentParser(description='AegisScan CLI')
     parser.add_argument('--url', required=True, help='Target URL')
     parser.add_argument('--scan', choices=['sqli', 'xss', 'rce', 'all'], 
                        default='all', help='Scan type')
@@ -55,8 +55,10 @@ def main():
                        default='safe-active', help='Safety profile (mặc định: safe-active)')
     parser.add_argument('--allowlist', default='', help='Allowlist domains (phân cách bằng dấu phẩy)')
     parser.add_argument('--denylist', default='', help='Denylist domains (phân cách bằng dấu phẩy)')
-    parser.add_argument('--local-lab', action='store_true', 
-                       help='Bật Local Lab Mode — cho phép quét localhost/LAN')
+    parser.add_argument('--local-lab', dest='local_lab', action='store_true', default=None, 
+                       help='Bật Local Lab Mode — cho phép quét localhost/LAN (mặc định: BẬT)')
+    parser.add_argument('--no-local-lab', dest='local_lab', action='store_false',
+                       help='Tắt Local Lab Mode — chặn quét localhost/LAN')
     parser.add_argument('--dry-run', action='store_true', 
                        help='Dry-run — hiển thị request dự kiến mà không gửi')
     parser.add_argument('--confirm', action='store_true', 
@@ -92,7 +94,7 @@ def main():
               f"(chọn từ: {', '.join(EXTRA_SCAN_CHOICES)})")
         sys.exit(1)
 
-    print(f"🛡️ Smart Security Scanner")
+    print(f"🛡️ AegisScan")
     print(f"Target: {args.url}")
     print(f"Profile: {args.profile}")
     print("=" * 50)

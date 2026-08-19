@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================
-#   📦 Build Smart Security Scanner — macOS
+#   📦 Build AegisScan — macOS
 #   Cách dùng:  ./build_macos.sh
 #   Tùy chọn:   BUILD_MODE=onefile (1 file) | onedir (thư mục, mặc định)
 # ============================================
@@ -15,7 +15,7 @@ if [ -f ".venv/bin/activate" ]; then
 fi
 
 echo "============================================"
-echo "   Đóng gói Smart Security Scanner (macOS)"
+echo "   Đóng gói AegisScan (macOS)"
 echo "============================================"
 echo "Python: $(python --version 2>&1)"
 
@@ -45,8 +45,8 @@ python -m PyInstaller packaging/smart_scanner.spec --noconfirm --clean
 echo ""
 echo "============================================"
 echo "✅ HOÀN TẤT! Ứng dụng tại:"
-echo "   smart_scanner/dist/SmartSecurityScanner/"
+echo "   smart_scanner/dist/AegisScan/"
 echo ""
-echo "Chạy:  dist/SmartSecurityScanner/SmartSecurityScanner"
+echo "Chạy:  dist/AegisScan/AegisScan"
 echo "Mở browser tại: http://127.0.0.1:8501"
 echo "============================================"

@@ -268,7 +268,7 @@ def test_scope_guard_blocks_out_of_scope_target():
 def test_scope_guard_blocks_localhost_without_local_lab_mode():
     from utils.scope_guard import ScopeGuard
 
-    # Mặc định không bật Local Lab Mode → chặn localhost
+    # Khi TẮT Local Lab Mode → chặn localhost
     guard = ScopeGuard({'local_lab_mode': False})
     result = guard.authorize_target('http://localhost:8000')
     assert result['allowed'] is False
@@ -288,6 +288,24 @@ def test_scope_guard_allows_localhost_with_local_lab_mode():
         'local_lab_mode': False,
     })
     assert guard.is_allowed('https://app.staging.com') is True
+    assert guard.is_allowed('https://evil.com') is False
+
+
+def test_scope_guard_allows_everything_by_default():
+    from utils.scope_guard import ScopeGuard
+
+    # Mặc định (không truyền config) → cho phép quét MỌI trang, kể cả localhost
+    guard = ScopeGuard()
+    assert guard.local_lab_mode is True
+    assert guard.is_allowed('http://localhost:8000') is True
+    assert guard.is_allowed('http://192.168.1.10') is True
+    assert guard.is_allowed('https://example.com') is True
+
+    result = guard.authorize_target('http://localhost:8000', confirm=True)
+    assert result['allowed'] is True
+
+    # Denylist vẫn luôn chặn dù ở mặc định
+    guard = ScopeGuard({'denylist': ['evil.com']})
     assert guard.is_allowed('https://evil.com') is False
 
 

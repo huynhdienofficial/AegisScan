@@ -1,4 +1,4 @@
-# 📊 Trạng Thái Dự Án — Smart Security Scanner (cập nhật 2026-08-19)
+# 📊 Trạng Thái Dự Án — AegisScan (cập nhật 2026-08-19)
 
 > Bản trước (đối chiếu đặc tả v2.0) đã lỗi thời và có nhiều điểm sai lệch so
 > với code thực tế (báo cáo Storage/Scope Guard/SARIF "chưa có" dù đã tồn

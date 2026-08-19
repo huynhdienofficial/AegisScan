@@ -1,5 +1,5 @@
 """
-🚀 Trình khởi động giao diện Smart Security Scanner.
+🚀 Trình khởi động giao diện AegisScan.
 Chỉ cần chạy: python run_ui.py
 """
 import os
@@ -12,7 +12,7 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
-    print("🛡️  Đang khởi động Smart Security Scanner...")
+    print("🛡️  Đang khởi động AegisScan...")
     print("=" * 50)
 
     # Khởi động Streamlit (chỉ bind localhost — bảo mật, xem data_residency.py #64)

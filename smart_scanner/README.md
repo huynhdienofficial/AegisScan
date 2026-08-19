@@ -1,4 +1,4 @@
-# 🛡️ Smart Security Scanner
+# 🛡️ AegisScan
 
 Công cụ quét lỗ hổng bảo mật (Web DAST + Infrastructure) với CLI và giao
 diện Streamlit, theo kiến trúc "Security Scanning & Exploitation Platform".
@@ -152,7 +152,7 @@ Chi tiết đầy đủ về mô hình đe doạ và các lớp kiểm soát: xe
 BUILD_MODE=onefile ./build_macos.sh     # 1 file .exe duy nhất
 ```
 
-Kết quả tại `smart_scanner/dist/SmartSecurityScanner/` (không commit vào git — xem `.gitignore`).
+Kết quả tại `smart_scanner/dist/AegisScan/` (không commit vào git — xem `.gitignore`).
 
 ### 🖥️ Build trên Windows
 
@@ -161,7 +161,7 @@ build_windows.bat
 set BUILD_MODE=onefile & build_windows.bat
 ```
 
-Kết quả tại `smart_scanner\dist\SmartSecurityScanner\`.
+Kết quả tại `smart_scanner\dist\AegisScan\`.
 
 ### Ghi chú đóng gói
 - Ứng dụng tự **bind localhost** (127.0.0.1) — an toàn, không expose ra mạng

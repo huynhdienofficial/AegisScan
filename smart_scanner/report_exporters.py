@@ -14,7 +14,7 @@ class SARIFExporter:
     """Xuất findings sang SARIF 2.1.0 format cho CI/CD."""
 
     @staticmethod
-    def export(findings, tool_name='Smart Security Scanner', tool_version='3.1.0'):
+    def export(findings, tool_name='AegisScan', tool_version='3.1.0'):
         """Tạo SARIF report từ danh sách findings."""
         rules = {}
         results = []

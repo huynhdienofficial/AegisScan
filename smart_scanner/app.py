@@ -18,8 +18,8 @@ from utils.safety_profiles import SafetyManager
 from crawler_core import AsyncCrawlerEngine
 
 
-st.set_page_config(page_title="Smart Security Scanner", layout="wide")
-st.title("🛡️ Smart Security Scanner")
+st.set_page_config(page_title="AegisScan", layout="wide")
+st.title("🛡️ AegisScan")
 
 
 def build_report_payload(urls, params, passive_findings, active_findings, tech, apis, risk):
@@ -60,7 +60,7 @@ def render_html_report(report_payload):
     <html>
     <head>
         <meta charset="utf-8" />
-        <title>Smart Security Scanner Report</title>
+        <title>AegisScan Report</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }}
             h1 {{ color: #111827; }}
@@ -72,7 +72,7 @@ def render_html_report(report_payload):
         </style>
     </head>
     <body>
-        <h1>Smart Security Scanner Report</h1>
+        <h1>AegisScan Report</h1>
         <div class="grid">
             <div class="card"><strong>Target</strong><br>{report_payload['summary']['target']}</div>
             <div class="card"><strong>URLs Found</strong><br>{report_payload['summary']['urls_found']}</div>
@@ -123,7 +123,7 @@ scan_rce = st.sidebar.checkbox("RCE", value=True)
 concurrency = st.sidebar.slider("Concurrency", 1, 10, 3)
 
 # Bước 7: Scope Guard
-local_lab = st.sidebar.checkbox("Local Lab Mode", value=False,
+local_lab = st.sidebar.checkbox("Local Lab Mode", value=True,
                                  help="Cho phép quét localhost/LAN")
 allowlist_input = st.sidebar.text_input("Allowlist (phân cách bằng phẩy)", "",
                                         help="VD: example.com, *.staging.com, 192.168.1.0/24")

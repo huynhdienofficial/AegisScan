@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec — Đóng gói Smart Security Scanner thành ứng dụng
+PyInstaller spec — Đóng gói AegisScan thành ứng dụng
 chạy trực tiếp không cần cài Python.
 
 Build:
@@ -108,7 +108,7 @@ if BUILD_MODE == 'onefile':
         a.zipfiles,
         a.datas,
         [],
-        name='SmartSecurityScanner',
+        name='AegisScan',
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
@@ -127,7 +127,7 @@ else:
         a.scripts,
         [],
         exclude_binaries=True,
-        name='SmartSecurityScanner',
+        name='AegisScan',
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
@@ -143,5 +143,5 @@ else:
         exe, a.binaries, a.zipfiles, a.datas,
         strip=False, upx=False,
         upx_exclude=[],
-        name='SmartSecurityScanner',
+        name='AegisScan',
     )

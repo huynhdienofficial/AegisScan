@@ -1,5 +1,5 @@
 """
-🛡️ Smart Security Scanner — Giao diện kiểm tra bảo mật toàn diện
+🛡️ AegisScan — Giao diện kiểm tra bảo mật toàn diện
 Tổ chức khoa học theo 4 nhóm chính (theo Feature List v3.1 — 86/86 tính năng):
   1. Web DAST — Quét ứng dụng web/API (OWASP Top 10 + nâng cao)
   2. Infra & Cloud — Hạ tầng/Server/Container/Cloud
@@ -69,7 +69,7 @@ from fingerprint.attack_surface.exploit_manager import ExploitManager
 
 # ─── Cấu hình trang ─────────────────────────────────────────
 st.set_page_config(
-    page_title="Smart Security Scanner",
+    page_title="AegisScan",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -79,105 +79,106 @@ st.set_page_config(
 st.markdown("""
 <style>
     .stApp {
-        background: #0d1117;
-        color: #c9d1d9;
+        background: #f6f8fa;
+        color: #1f2328;
     }
     .stApp, .stApp * { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
 
     .hero {
-        border-bottom: 1px solid #21262d;
+        border-bottom: 1px solid #d0d7de;
         padding: 1.1rem 0 1rem 0; margin-bottom: 0.4rem;
     }
     .hero-title {
-        font-size: 1.6rem; font-weight: 650; color: #e6edf3;
+        font-size: 1.6rem; font-weight: 650; color: #1f2328;
         letter-spacing: -0.01em;
     }
-    .hero-sub { font-size: 0.88rem; color: #7d8590; margin-top: 0.25rem; }
+    .hero-sub { font-size: 0.88rem; color: #57606a; margin-top: 0.25rem; }
 
     .scan-card {
-        background: #12161d; border: 1px solid #21262d;
+        background: #ffffff; border: 1px solid #d0d7de;
         border-radius: 8px; padding: 1.1rem 1.4rem;
         margin: 0.5rem auto 1rem auto; max-width: 1100px;
+        box-shadow: 0 1px 2px rgba(31, 35, 40, 0.05);
     }
     .metric-card {
-        background: #12161d; border: 1px solid #21262d;
+        background: #ffffff; border: 1px solid #d0d7de;
         border-radius: 6px; padding: 0.85rem; text-align: center;
     }
-    .metric-value { font-size: 1.5rem; font-weight: 650; color: #e6edf3; }
-    .metric-label { font-size: 0.75rem; color: #7d8590; margin-top: 0.15rem; }
+    .metric-value { font-size: 1.5rem; font-weight: 650; color: #1f2328; }
+    .metric-label { font-size: 0.75rem; color: #57606a; margin-top: 0.15rem; }
 
     .badge {
         display: inline-block; padding: 0.12rem 0.55rem; border-radius: 4px;
         font-size: 0.72rem; font-weight: 600; letter-spacing: 0.01em;
         border: 1px solid transparent;
     }
-    .badge-green { background: #0d2818; color: #3fb950; border-color: #23763899; }
-    .badge-red { background: #2d1214; color: #f85149; border-color: #8e242699; }
-    .badge-yellow { background: #2b2111; color: #d29922; border-color: #7d5c0099; }
-    .badge-blue { background: #0d1b2e; color: #58a6ff; border-color: #1f5b9999; }
-    .badge-gray { background: #161b22; color: #8b949e; border-color: #30363d; }
+    .badge-green { background: #dafbe1; color: #1a7f37; border-color: #a5d6b0; }
+    .badge-red { background: #ffebe9; color: #cf222e; border-color: #ffb3ae; }
+    .badge-yellow { background: #fff8c5; color: #9a6700; border-color: #e6d68a; }
+    .badge-blue { background: #ddf4ff; color: #0969da; border-color: #a8d3f5; }
+    .badge-gray { background: #eaeef2; color: #57606a; border-color: #d0d7de; }
 
     .stTextInput > div > div > input {
-        background-color: #0d1117;
-        border: 1px solid #30363d; border-radius: 6px;
-        color: #e6edf3; font-size: 0.95rem; padding: 0.55rem 0.85rem;
+        background-color: #ffffff;
+        border: 1px solid #d0d7de; border-radius: 6px;
+        color: #1f2328; font-size: 0.95rem; padding: 0.55rem 0.85rem;
     }
     .stTextInput > div > div > input:focus {
-        border-color: #58a6ff;
+        border-color: #0969da;
     }
     .stButton > button {
-        background: #21262d; color: #e6edf3;
-        font-size: 0.95rem; font-weight: 600; border: 1px solid #30363d; border-radius: 6px;
+        background: #f6f8fa; color: #1f2328;
+        font-size: 0.95rem; font-weight: 600; border: 1px solid #d0d7de; border-radius: 6px;
         padding: 0.55rem 1.6rem; width: 100%; transition: background 0.15s, border-color 0.15s;
     }
     .stButton > button:hover {
-        background: #30363d; border-color: #8b949e; color: #e6edf3;
+        background: #eaeef2; border-color: #57606a; color: #1f2328;
     }
     .stButton > button:active {
-        background: #1f6feb; border-color: #1f6feb;
+        background: #0969da; border-color: #0969da; color: #ffffff;
     }
 
-    .footer { text-align: center; color: #484f58; font-size: 0.78rem; padding: 1rem 0; }
+    .footer { text-align: center; color: #6e7781; font-size: 0.78rem; padding: 1rem 0; }
 
     .risk-detail {
-        background: #12161d;
-        border: 1px solid #21262d; border-left-width: 3px;
+        background: #ffffff;
+        border: 1px solid #d0d7de; border-left-width: 3px;
         border-radius: 6px; padding: 0.85rem 1rem; margin: 0.55rem 0;
     }
-    .risk-title { font-size: 0.98rem; font-weight: 650; color: #e6edf3; }
-    .risk-desc { color: #8b949e; font-size: 0.88rem; margin-top: 0.35rem; }
-    .risk-item { color: #7d8590; font-size: 0.82rem; margin: 0.2rem 0; }
-    .risk-reco { color: #3fb950; font-size: 0.82rem; margin: 0.2rem 0; }
+    .risk-title { font-size: 0.98rem; font-weight: 650; color: #1f2328; }
+    .risk-desc { color: #57606a; font-size: 0.88rem; margin-top: 0.35rem; }
+    .risk-item { color: #57606a; font-size: 0.82rem; margin: 0.2rem 0; }
+    .risk-reco { color: #1a7f37; font-size: 0.82rem; margin: 0.2rem 0; }
 
     .group-header {
-        border-bottom: 1px solid #21262d;
+        border-bottom: 1px solid #d0d7de;
         padding: 0.3rem 0 0.5rem 0; margin: 0.6rem 0 0.7rem 0;
-        font-size: 0.95rem; font-weight: 650; color: #e6edf3;
+        font-size: 0.95rem; font-weight: 650; color: #1f2328;
     }
     .subgroup-header {
-        border-left: 2px solid #30363d;
+        border-left: 2px solid #d0d7de;
         padding: 0.15rem 0 0.15rem 0.7rem; margin: 0.7rem 0 0.3rem 0;
-        font-size: 0.82rem; font-weight: 600; color: #8b949e;
+        font-size: 0.82rem; font-weight: 600; color: #57606a;
         text-transform: uppercase; letter-spacing: 0.03em;
     }
     .tool-count {
-        color: #484f58; font-size: 0.78rem; font-weight: 500;
+        color: #6e7781; font-size: 0.78rem; font-weight: 500;
         margin-left: 0.4rem; text-transform: none; letter-spacing: normal;
     }
 
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.15rem; background: transparent;
-        border-bottom: 1px solid #21262d; padding: 0;
+        border-bottom: 1px solid #d0d7de; padding: 0;
     }
     .stTabs [data-baseweb="tab"] {
         border-radius: 6px 6px 0 0; padding: 0.45rem 1rem; font-weight: 500;
-        color: #7d8590;
+        color: #57606a;
     }
     .stTabs [aria-selected="true"] {
-        color: #e6edf3 !important;
+        color: #1f2328 !important;
     }
     div[data-testid="stCheckbox"] label {
-        padding: 0.25rem 0; font-size: 0.88rem; color: #c9d1d9;
+        padding: 0.25rem 0; font-size: 0.88rem; color: #1f2328;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -185,7 +186,7 @@ st.markdown("""
 # ─── Hero ────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <div class="hero-title">Smart Security Scanner</div>
+    <div class="hero-title">AegisScan</div>
     <div class="hero-sub">Web · Infra · Governance · Enterprise — 53 công cụ, 86 tính năng</div>
 </div>
 """, unsafe_allow_html=True)
@@ -1354,35 +1355,35 @@ services:
             rc1, rc2, rc3 = st.columns([2, 1, 1])
             with rc1:
                 st.markdown(f"""
-                <div style="background:#12161d; border:1px solid #21262d;
+                <div style="background:#ffffff; border:1px solid #d0d7de;
                             border-radius:8px; padding:1rem;">
-                    <div style="font-size:0.8rem; color:#7d8590;">Đánh giá nguy hiểm tổng thể</div>
-                    <div style="font-size:2rem; font-weight:700; color:#e6edf3;">{detailed_risk['score']}<span style="font-size:1rem; color:#484f58;">/100</span></div>
+                    <div style="font-size:0.8rem; color:#57606a;">Đánh giá nguy hiểm tổng thể</div>
+                    <div style="font-size:2rem; font-weight:700; color:#1f2328;">{detailed_risk['score']}<span style="font-size:1rem; color:#6e7781;">/100</span></div>
                     <div>{risk_badge(detailed_risk['rating'])}</div>
-                    <div style="font-size:0.86rem; color:#8b949e; margin-top:0.5rem;">{detailed_risk['summary']}</div>
+                    <div style="font-size:0.86rem; color:#57606a; margin-top:0.5rem;">{detailed_risk['summary']}</div>
                 </div>
                 """, unsafe_allow_html=True)
             with rc2:
                 st.markdown(f"""
-                <div style="background:#12161d; border:1px solid #21262d;
+                <div style="background:#ffffff; border:1px solid #d0d7de;
                             border-radius:8px; padding:1rem; text-align:center;">
-                    <div style="font-size:0.78rem; color:#7d8590;">Mục tiêu</div>
-                    <div style="font-size:0.88rem; word-break:break-all; font-weight:600; color:#e6edf3;">{target_url}</div>
-                    <div style="font-size:0.68rem; color:#484f58; margin-top:0.4rem;">
+                    <div style="font-size:0.78rem; color:#57606a;">Mục tiêu</div>
+                    <div style="font-size:0.88rem; word-break:break-all; font-weight:600; color:#1f2328;">{target_url}</div>
+                    <div style="font-size:0.68rem; color:#6e7781; margin-top:0.4rem;">
                         Scan ID: {scan_context.scan_id[:12]}...
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
             with rc3:
                 st.markdown(f"""
-                <div style="background:#12161d; border:1px solid #21262d;
+                <div style="background:#ffffff; border:1px solid #d0d7de;
                             border-radius:8px; padding:1rem; text-align:center;">
-                    <div style="font-size:0.78rem; color:#7d8590;">Phân bố mức độ</div>
-                    <div style="font-size:0.82rem; margin-top:0.35rem; color:#c9d1d9; text-align:left;">
-                        <span style="color:#f85149;">Critical</span> <b>{detailed_risk['metrics']['critical']}</b><br>
-                        <span style="color:#f85149;">High</span> <b>{detailed_risk['metrics']['high']}</b><br>
-                        <span style="color:#d29922;">Medium</span> <b>{detailed_risk['metrics']['medium']}</b><br>
-                        <span style="color:#58a6ff;">Low</span> <b>{detailed_risk['metrics']['low']}</b>
+                    <div style="font-size:0.78rem; color:#57606a;">Phân bố mức độ</div>
+                    <div style="font-size:0.82rem; margin-top:0.35rem; color:#1f2328; text-align:left;">
+                        <span style="color:#cf222e;">Critical</span> <b>{detailed_risk['metrics']['critical']}</b><br>
+                        <span style="color:#cf222e;">High</span> <b>{detailed_risk['metrics']['high']}</b><br>
+                        <span style="color:#9a6700;">Medium</span> <b>{detailed_risk['metrics']['medium']}</b><br>
+                        <span style="color:#0969da;">Low</span> <b>{detailed_risk['metrics']['low']}</b>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1512,9 +1513,9 @@ services:
 
                     st.markdown("### Tổng kết")
                     st.markdown(f"""
-                    <div style="background:#12161d; border:1px solid #21262d;
+                    <div style="background:#ffffff; border:1px solid #d0d7de;
                                 border-radius:8px; padding:1rem;">
-                        <b style="color:#e6edf3;">{detailed_risk['summary']}</b>
+                        <b style="color:#1f2328;">{detailed_risk['summary']}</b>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -1628,24 +1629,65 @@ services:
                     use_container_width=True,
                 )
             with c2:
+                active_rows = ''.join(
+                    f'<tr><td>{i+1}</td><td>{f.get("type", (f.get("indicators") or [{}])[0].get("type", ""))}</td>'
+                    f'<td>{f.get("severity", f.get("confidence", ""))}</td><td>{f.get("url", "")}</td></tr>'
+                    for i, f in enumerate(all_findings[:50])
+                ) or '<tr><td colspan="4">Không có active findings</td></tr>'
+
+                passive_rows = ''.join(
+                    f'<tr><td>{f.get("type", "N/A")}</td><td>{f.get("severity", "N/A")}</td>'
+                    f'<td>{f.get("detail", f.get("description", "N/A"))}</td></tr>'
+                    for f in config_findings
+                ) or '<tr><td colspan="3">Không có passive findings</td></tr>'
+
+                tech_rows = ''.join(
+                    f'<tr><td>{t.get("name", t.get("technology", "N/A"))}</td><td>{t.get("version", "N/A")}</td><td>{t.get("category", "N/A")}</td></tr>'
+                    for t in tech
+                ) or '<tr><td colspan="3">Không phát hiện công nghệ</td></tr>'
+
+                api_rows = ''.join(
+                    f'<tr><td>{a.get("method", "GET")}</td><td>{a.get("url", "N/A")}</td></tr>'
+                    for a in apis
+                ) or '<tr><td colspan="2">Không phát hiện API endpoint</td></tr>'
+
+                html_report = f"""
+                <html><head><meta charset="utf-8"><title>Security Report</title>
+                <style>body{{font-family:Arial;margin:24px;color:#1f2937}}
+                h1{{color:#111827}} table{{width:100%;border-collapse:collapse;margin-top:12px}}
+                th,td{{border:1px solid #d1d5db;padding:8px;text-align:left}} th{{background:#eef2ff}}</style>
+                </head><body>
+                <h1>AegisScan Report</h1>
+                <p><b>Target:</b> {target_url}</p>
+                <p><b>Scan ID:</b> {scan_context.scan_id}</p>
+                <p><b>URLs Found:</b> {len(urls)}</p>
+                <p><b>Đánh giá:</b> {detailed_risk['rating']} ({detailed_risk['score']}/100)</p>
+
+                <h2>Active Findings ({len(all_findings)})</h2>
+                <table><tr><th>#</th><th>Loại</th><th>Severity</th><th>URL</th></tr>
+                {active_rows}
+                </table>
+
+                <h2>Passive Findings ({len(config_findings)})</h2>
+                <table><tr><th>Loại</th><th>Severity</th><th>Chi tiết</th></tr>
+                {passive_rows}
+                </table>
+
+                <h2>Technologies ({len(tech)})</h2>
+                <table><tr><th>Tên</th><th>Version</th><th>Category</th></tr>
+                {tech_rows}
+                </table>
+
+                <h2>Discovered APIs ({len(apis)})</h2>
+                <table><tr><th>Method</th><th>URL</th></tr>
+                {api_rows}
+                </table>
+                </body></html>
+                """
+
                 st.download_button(
                     "Tải báo cáo HTML",
-                    data=f"""
-                    <html><head><meta charset="utf-8"><title>Security Report</title>
-                    <style>body{{font-family:Arial;margin:24px;color:#1f2937}}
-                    h1{{color:#111827}} table{{width:100%;border-collapse:collapse;margin-top:12px}}
-                    th,td{{border:1px solid #d1d5db;padding:8px;text-align:left}} th{{background:#eef2ff}}</style>
-                    </head><body>
-                    <h1>Smart Security Scanner Report</h1>
-                    <p><b>Target:</b> {target_url}</p>
-                    <p><b>Scan ID:</b> {scan_context.scan_id}</p>
-                    <p><b>Đánh giá:</b> {detailed_risk['rating']} ({detailed_risk['score']}/100)</p>
-                    <h2>Findings ({len(all_findings)})</h2>
-                    <table><tr><th>#</th><th>Loại</th><th>Severity</th><th>URL</th></tr>
-                    {''.join(f'<tr><td>{i+1}</td><td>{f.get("type", f.get("indicators", [{}])[0].get("type", ""))}</td><td>{f.get("severity", f.get("confidence", ""))}</td><td>{f.get("url", "")}</td></tr>' for i, f in enumerate(all_findings[:50])) or '<tr><td colspan="4">Không có findings</td></tr>'}
-                    </table>
-                    </body></html>
-                    """,
+                    data=html_report,
                     file_name=f"security_scan_{scan_context.scan_id[:8]}.html",
                     mime="text/html",
                     use_container_width=True,
@@ -1670,6 +1712,6 @@ services:
 # ─── Footer ──────────────────────────────────────────────────
 st.markdown("""
 <div class="footer">
-    Smart Security Scanner v3.1 — Web DAST (22) + Infra & Cloud (11) + Governance (10) + Enterprise & Exploit (10) · 53 công cụ · 86/86 tính năng
+    AegisScan v3.1 — Web DAST (22) + Infra & Cloud (11) + Governance (10) + Enterprise & Exploit (10) · 53 công cụ · 86/86 tính năng
 </div>
 """, unsafe_allow_html=True)
